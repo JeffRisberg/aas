@@ -28,10 +28,11 @@ object RunIntro extends Serializable {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder
       .appName("Intro")
+      .config("spark.master", "local")
       .getOrCreate
     import spark.implicits._
  
-    val preview = spark.read.csv("hdfs:///user/ds/linkage")
+    val preview = spark.read.csv("../../advanced-analytics/linkage/data")
     preview.show()
     preview.printSchema()
 
@@ -39,7 +40,7 @@ object RunIntro extends Serializable {
       .option("header", "true")
       .option("nullValue", "?")
       .option("inferSchema", "true")
-      .csv("hdfs:///user/ds/linkage")
+      .csv("../../advanced-analytics/linkage/data")
     parsed.show()
     parsed.printSchema()
 
