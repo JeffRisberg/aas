@@ -33,6 +33,7 @@ object RunIntro extends Serializable {
     import spark.implicits._
  
     val preview = spark.read.csv("../../advanced-analytics/linkage/data")
+    println("Preview Count=" + preview.count())
     preview.show()
     preview.printSchema()
 
@@ -44,7 +45,7 @@ object RunIntro extends Serializable {
     parsed.show()
     parsed.printSchema()
 
-    parsed.count()
+    println("Parsed Count=" + parsed.count())
     parsed.cache()
     parsed.groupBy("is_match").count().orderBy($"count".desc).show()
 
@@ -72,6 +73,7 @@ object RunIntro extends Serializable {
     spark.sql("""
       SELECT a.field, a.count + b.count total, a.mean - b.mean delta
       FROM match_desc a INNER JOIN miss_desc b ON a.field = b.field
+      WHERE a.field NOT IN ("id_1", "id_2")
       ORDER BY delta DESC, total DESC
     """).show()
 

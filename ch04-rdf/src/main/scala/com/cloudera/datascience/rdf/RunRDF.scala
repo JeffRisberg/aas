@@ -6,28 +6,34 @@
 
 package com.cloudera.datascience.rdf
 
-import org.apache.spark.ml.{PipelineModel, Pipeline}
-import org.apache.spark.ml.classification.{DecisionTreeClassifier,
-  RandomForestClassifier, RandomForestClassificationModel}
+import org.apache.spark.ml.{Pipeline, PipelineModel}
+import org.apache.spark.ml.classification.{DecisionTreeClassificationModel, DecisionTreeClassifier, RandomForestClassificationModel, RandomForestClassifier}
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.feature.{VectorAssembler, VectorIndexer}
 import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.ml.tuning.{ParamGridBuilder, TrainValidationSplit}
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
+import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.tree.model.DecisionTreeModel
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions._
+
 import scala.util.Random
 
 object RunRDF {
 
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder().getOrCreate()
+    val spark = SparkSession.builder()
+      .appName("RDF Forest Coverage")
+      .config("spark.master", "local")
+      .getOrCreate
     import spark.implicits._
 
+    val base = "../../advanced-analytics/forestCover/"
     val dataWithoutHeader = spark.read.
       option("inferSchema", true).
       option("header", false).
-      csv("hdfs:///user/ds/covtype.data")
+      csv(base + "covtype.data")
 
     val colNames = Seq(
         "Elevation", "Aspect", "Slope",
@@ -55,10 +61,10 @@ object RunRDF {
     val runRDF = new RunRDF(spark)
 
     runRDF.simpleDecisionTree(trainData, testData)
-    runRDF.randomClassifier(trainData, testData)
-    runRDF.evaluate(trainData, testData)
-    runRDF.evaluateCategorical(trainData, testData)
-    runRDF.evaluateForest(trainData, testData)
+    //runRDF.randomClassifier(trainData, testData)
+    //runRDF.evaluate(trainData, testData)
+    //runRDF.evaluateCategorical(trainData, testData)
+    //runRDF.evaluateForest(trainData, testData)
 
     trainData.unpersist()
     testData.unpersist()
@@ -120,6 +126,29 @@ class RunRDF(private val spark: SparkSession) {
       orderBy("Cover_Type")
 
     confusionMatrix.show()
+
+    val input1 = "2596,51,3,258,0,510,221,232,148,6279,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0"
+    println("should be 5")
+    predict(model, input1)
+
+    val input2 = "2500,74,11,190,9,930,233,219,116,5279,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0"
+    println("should be 5")
+    predict(model, input2)
+
+    val input3 = "2952,107,11,42,7,5845,239,226,116,3509,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0"
+    println("should be 2")
+    predict(model, input3)
+
+    val input4 = "2805,44,17,170,32,1902,222,200,108,2436,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0"
+    println("should be 2")
+    predict(model, input4)
+  }
+
+  def predict(model: DecisionTreeClassificationModel, line: String): Unit = {
+    val values = line.split(',').map(_.toDouble)
+    val featureVector = Vectors.dense(values)
+
+    //println(model.transform(dataSet))
   }
 
   def classProbabilities(data: DataFrame): Array[Double] = {
